@@ -3,8 +3,8 @@ import re
 from time import sleep
 from turtle import position
 import long_responses as long
-from pynput.mouse import Button, Controller
-from pynput.keyboard import Key, Controller as KeyControl
+import speech_recognition as sr
+from win32com.client import Dispatch
 
 def message_probability(user_message, recognised_words, single_response=False, required_words=[]):
     message_certainty = 0
@@ -33,10 +33,15 @@ def check_all_messages(message):
         nonlocal highest_prob_list
         highest_prob_list[bot_response] = message_probability(message, list_of_words, single_response, required_words)
 
-    # Réponses ------------------------------------
-    response("Bonjour", ["yo", "salut", "bonjour", "slt", "coucou"], single_response=True)
+    # Réponses 
+    response("Bonjour", ["yo", "salut", "bonjour", "slt", "coucou", "hello"], single_response=True)
     response("ça va bien et toi ?", ["comment", "ça", "va", "tu", "vas", "bien"], single_response=True)  
     response("mdr la blague", ["feur"], required_words=["feur"])        
+    response("Merci.", ["joli", "jolie"], single_response=True)
+    response("De rien.", ["merci"], single_response=True)
+    response("Non. Tu n'es rien pour moi.", ["est-ce", "que", "on", "est", "amis"], single_response=True)
+    response(":c", ["ah", "oh", "aie", "ok"], single_response=True)
+
     response(long.R_EATING, ["tu", "manges", "quoi"], required_words=["manges"])        
     response(long.R_LOVE, ["tu", "aimes", "bien "], required_words=["m'aimes"])  
     response(long.R_DO, ["ça", "tu", "fais", "fait", "quoi"], single_response=True)  
@@ -48,8 +53,12 @@ def check_all_messages(message):
     response(long.R_VACANCES, ["vous", "etes", "ou", "en", "vacances"], required_words=["vacances"])  
     response(long.R_VACANCESRES, ["on", "est", "a", "en", "au"], required_words=["on"])  
     response(long.R_OUT, ["tu", "sors", "sort", "dehors"], single_response=True)
-    response(":c", ["ah", "oh", "aie", "ok"], single_response=True)
+    response(long.R_HOUR, ["il", "est", "quelle", "heure"], single_response=True)
+    response("super", ["moi", "ça", "va", "je", "vais", "bien"], single_response=True)
+    
 
+    # Insulte in long_responses.py
+    response(long.R_INSULTE, [long.insultes], single_response=True)
 
     best_match = max(highest_prob_list, key=highest_prob_list.get)
 
@@ -61,5 +70,21 @@ def get_response(user_input):
     return response
 
 while True:
-    print("Bot: " + get_response(input("Moi: ")))
+    r  = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Speak")
+        audio = r.listen(source)
+    try:
+        text = r.recognize_google(audio, language="fr-FR")
+        print("Moi: " + text)
+    except sr.UnknownValueError:
+        print("L'audio n'as pas été compris")
+    except sr.RequestError as e:
+        print("Le service Google Speech API ne fonctionne plus" + format(e))
+    
+    try:
+        print("Bot: " + Dispatch("SAPI.SpVoice").Speak(get_response(text)))
+    except:
+        print('\n')
+    # print("Bot: " + get_response(text))
     
